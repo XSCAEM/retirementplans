@@ -11,7 +11,7 @@ export default async function decorate(block) {
 	// Configuration
   const CONFIG = {
     WRAPPER_SERVICE_URL: 'https://3635370-refdemoapigateway-stage.adobeioruntime.net/api/v1/web/ref-demo-api-gateway/fetch-cf',
-    GRAPHQL_QUERY: '/graphql/execute.json/ref-demo-eds/CTAByPath',
+    GRAPHQL_QUERY: '/graphql/execute.json/wknd-universal/CTAByPath',
     EXCLUDED_THEME_KEYS: new Set(['brandSite', 'brandLogo'])
   };
 	

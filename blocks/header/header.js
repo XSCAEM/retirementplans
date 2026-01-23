@@ -151,4 +151,460 @@ function settingAltTextForSearchIcon() {
   const searchImage = document.querySelector('.icon-search-light');
   if (!searchImage) {
     // eslint-disable-next-line no-console
-    console.debug('heade
+    console.debug('header: .icon-search-light not found; skipping search icon init');
+    return;
+  }
+  searchImage.style.cursor = 'pointer';
+  searchImage.addEventListener('click', () => {
+    createSearchBox();
+  });
+  searchImage.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      createSearchBox();
+      e.currentTarget.nextElementSibling.focus();
+    }
+  });
+  //searchImage.setAttribute('title', listOfAllPlaceholdersData.searchAltText || 'Search');
+}
+
+function handleEnterKey(event) {
+  if (event.key !== 'Enter') return;
+  const inputValue = document.querySelector('.search-container input').value;
+  //const url = (listOfAllPlaceholdersData.searchRedirectUrl || 'https://wknd.site/en/search?q=') + inputValue;
+
+  const url = `/content/${siteName}/search-results.html?q=${inputValue}`;
+
+  if (inputValue) window.location.href = url;
+}
+
+function createSearchBox() {
+  const navWrapper = document.querySelector('.nav-wrapper');
+  const headerWrapper = document.querySelector('.header-wrapper');
+  const navTools = document.querySelector('.nav-tools p');
+  let searchContainer = headerWrapper.querySelector('.search-container');
+  let cancelContainer = navWrapper.querySelector('.cancel-container');
+  let overlay = document.querySelector('.overlay');
+  const searchImage = document.querySelector('.icon-search-light');
+  document.body.classList.add('no-scroll');
+  if (searchContainer) {
+    const isVisible = searchContainer.style.display !== 'none';
+    searchContainer.style.display = isVisible ? 'none' : 'flex';
+    if (cancelContainer) {
+      cancelContainer.style.display = isVisible ? 'none' : 'flex';
+    }
+    overlay.style.display = isVisible ? 'none' : 'block';
+
+    searchImage.style.display = isVisible ? 'block' : 'none';
+  } else {
+    cancelContainer = div(
+      {
+        class: 'cancel-container',
+        role: 'button',
+        tabindex: 0,
+        'aria-label': 'close Search Box',
+      },
+    );
+    const cancelImg = img({ class: 'cancel-image' });
+    cancelImg.src = `${window.hlx.codeBasePath}/icons/cancel.svg`;
+    cancelImg.alt = 'cancel';
+    cancelImg.style.cssText = 'display: flex; cursor: pointer;';
+    cancelContainer.addEventListener('click', () => {
+      closeSearchBox();
+    });
+    cancelContainer.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === 'Escape') {
+        closeSearchBox();
+      }
+    });
+    cancelContainer.appendChild(cancelImg);
+    navTools.appendChild(cancelContainer);
+    // Hide search icon
+    searchImage.style.display = 'none';
+    searchContainer = div({ class: 'search-container' });
+    overlay = div({ class: 'overlay' });
+    document.body.appendChild(overlay);
+    const searchInputContainer = div({ class: 'search-input-container' });
+    const searchInputBox = document.createElement('input');
+    const searchIcon = img({ class: 'search-icon' });
+    searchIcon.src = `${window.hlx.codeBasePath}/icons/search-light.svg`;
+    searchIcon.alt = 'search';
+    searchIcon.addEventListener('click', () => {
+      if (searchInputBox.value) {
+        window.location.href = `/content/${siteName}/search-results.html?q=${searchInputBox.value}`;
+      }
+    });
+
+    Object.assign(searchInputBox, {
+      type: 'search',
+      id: 'search-input',
+      name: 'myInput',
+      placeholder: 'Search WKND',
+      value: '',
+      autocomplete: 'off',
+    });
+    searchInputBox.addEventListener('keydown', handleEnterKey);
+    searchInputContainer.append(searchInputBox, searchIcon);
+    const searchContainerWrapper = div({ class: 'search-input-wrapper' });
+    searchContainerWrapper.append(searchInputContainer);
+    searchContainer.appendChild(searchContainerWrapper);
+
+    navTools.appendChild(searchContainer);
+  }
+}
+
+/**
+ * Toggles the entire nav
+ * @param {Element} nav The container element
+ * @param {Element} navSections The nav sections within the container element
+ * @param {*} forceExpanded Optional param to force nav expand behavior when not null
+ */
+
+function closeSearchBox() {
+  const navWrapper = document.querySelector('.nav-wrapper');
+  const headerWrapper = document.querySelector('.header-wrapper');
+  const searchContainer = headerWrapper ? headerWrapper.querySelector('.search-container') : null;
+  const cancelContainer = navWrapper ? navWrapper.querySelector('.cancel-container') : null;
+  // const overlay = document.querySelector('.overlay');
+  //const searchImage = document.querySelector('.-light');
+  const searchImage = document.querySelector('.icon-search-light');
+  // if(searchContainer){
+  //   searchContainer.style.display = 'none';
+  // }
+  if (cancelContainer) {
+    cancelContainer.style.display = 'none';
+  }
+  if (searchImage) {
+    searchImage.style.display = 'flex';
+  }
+  // if (overlay) {
+  //   overlay.style.display = 'none';
+  // }
+  document.body.classList.remove('no-scroll');
+}
+
+const closeSearchOnFocusOut = (e, navTools) => {
+  const headerWrapper = document.querySelector('.header-wrapper');
+  const searchContainer = headerWrapper.querySelector('.search-container');
+
+  if (searchContainer && searchContainer.style.display !== 'none') {
+    const cancelContainer = navTools ? navTools.querySelector('.cancel-container') : null;
+    const searchImage = navTools ? navTools.querySelector('.icon-search-light') : null;
+    const isClickInside = (searchContainer && searchContainer.contains && searchContainer.contains(e.target))
+      || (cancelContainer && cancelContainer.contains && cancelContainer.contains(e.target))
+      || (searchImage && searchImage.contains && searchImage.contains(e.target));
+    if (!isClickInside) {
+      closeSearchBox();
+    }
+  }
+};
+
+async function addLogoLink(langCode) {
+  //urn:aemconnection:/content/wknd-universal/language-masters/en/magazine/jcr:content
+  const currentLang = langCode || getLanguage();
+  const aueResource = document.body.getAttribute('data-aue-resource')
+    ?.replace(new RegExp(`^.*?(\\/content.*?\\/${currentLang}).*$`), '$1');
+
+  let logoLink = '';
+  if (aueResource !== null && aueResource !== undefined && aueResource !== '') {
+    logoLink = `${aueResource}.html`;
+  } else {
+    if (langCode === 'en') {
+      logoLink = window.location.origin;
+    } else {
+      logoLink = window.location.origin + `/${langCode}`;
+    }
+  }
+
+  try {
+    const logoImage = document.querySelector('.nav-brand img');
+    const anchor = document.createElement('a');
+    Object.assign(anchor, {
+      href: logoLink,
+      title: logoImage?.alt,
+    });
+    const picture = document.querySelector('.nav-brand picture');
+    if (picture) anchor.appendChild(picture);
+    const targetElement = document.querySelector('.nav-brand .default-content-wrapper');
+    if (targetElement) {
+      targetElement.appendChild(anchor);
+    }
+  } catch (error) {
+    console.error('Error in addLogoLink:', error);
+  }
+}
+
+async function applyCFTheme(themeCFReference) {
+  if (!themeCFReference) return;
+
+  const CONFIG = {
+    WRAPPER_SERVICE_URL: 'https://3635370-refdemoapigateway-stage.adobeioruntime.net/api/v1/web/ref-demo-api-gateway/fetch-cf',
+    GRAPHQL_QUERY: '/graphql/execute.json/ref-demo-eds/BrandThemeByPath',
+    EXCLUDED_THEME_KEYS: new Set(['brandSite', 'brandLogo']),
+  };
+
+  try {
+    const decodedThemeCFReference = decodeURIComponent(themeCFReference);
+    const hostnameFromPlaceholders = await getHostname();
+    const hostname = hostnameFromPlaceholders ? hostnameFromPlaceholders : getMetadata('hostname');
+    const aemauthorurl = getMetadata('authorurl') || '';
+    const aempublishurl = hostname?.replace('author', 'publish')?.replace(/\/$/, '');
+    const isAuthor = isAuthorEnvironment();
+
+    // Prepare request configuration based on environment
+    const requestConfig = isAuthor
+      ? {
+          url: `${aemauthorurl}${CONFIG.GRAPHQL_QUERY};path=${decodedThemeCFReference};ts=${Date.now()}`,
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      : {
+          url: `${CONFIG.WRAPPER_SERVICE_URL}`,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            graphQLPath: `${aempublishurl}${CONFIG.GRAPHQL_QUERY}`,
+            cfPath: decodedThemeCFReference,
+            variation: `master;ts=${Date.now()}`,
+          }),
+        };
+
+    // Fetch theme data
+    const response = await fetch(requestConfig.url, {
+      method: requestConfig.method,
+      headers: requestConfig.headers,
+      ...(requestConfig.body && { body: requestConfig.body }),
+    });
+
+    if (!response.ok) {
+      console.error(`HTTP error! status: ${response.status}`);
+    }
+
+    let themeCFRes;
+
+    try {
+      const responseText = await response.text();
+
+      if (!responseText || responseText.trim() === '') {
+        console.warn('Empty response received from server');
+        return;
+      }
+      themeCFRes = JSON.parse(responseText);
+    } catch (jsonError) {
+      console.error('Error parsing JSON response:', jsonError);
+    }
+    const themeColors = themeCFRes?.data?.brandThemeByPath?.item;
+
+    if (!themeColors) {
+      console.warn('No theme data found in the response');
+      return;
+    }
+
+    // Apply theme colors to CSS variables
+    const cssVariables = Object.entries(themeColors)
+      .filter(([key, value]) => value != null && !CONFIG.EXCLUDED_THEME_KEYS.has(key))
+      .map(([key, value]) => `  --brand-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`)
+      .join('\n');
+
+    if (cssVariables) {
+      const styleElement = document.createElement('style');
+      styleElement.textContent = `:root {\n${cssVariables}\n}`;
+      document.head.appendChild(styleElement);
+    }
+  } catch (error) {
+    console.error('Error applying theme:', error);
+  }
+}
+
+/**
+ * loads and decorates the header, mainly the nav
+ * @param {Element} block The header block element
+ */
+export default async function decorate(block) {
+  const themeCFReference = getMetadata('theme_cf_reference');
+  applyCFTheme(themeCFReference);
+
+  const navMeta = getMetadata('nav');
+  const langCode = getLanguage();
+
+  const isAuthor = isAuthorEnvironment();
+
+  // === NEW: choose master vs child nav based on path ===
+  // If the current page is under /child-site/, load /child-site/nav
+  // Otherwise load /nav
+  const path = window.location.pathname || '';
+  const isChildSite = path.includes('/child-site/');
+
+  let navPath;
+  if (navMeta) {
+    navPath = new URL(navMeta, window.location).pathname;
+  } else if (isAuthor) {
+    navPath = `/content/${siteName}${PATH_PREFIX}/${langCode}${isChildSite ? '/child-site' : ''}/nav`;
+  } else {
+    navPath = `/${langCode}${isChildSite ? '/child-site' : ''}/nav`;
+  }
+
+  const fragment = await loadFragment(navPath);
+
+  // decorate nav DOM
+  block.textContent = '';
+  const nav = document.createElement('nav');
+  nav.id = 'nav';
+  while (fragment && fragment.firstElementChild) nav.append(fragment.firstElementChild);
+
+  const classes = ['brand', 'sections', 'tools'];
+  classes.forEach((c, i) => {
+    const section = nav.children[i];
+    if (section) section.classList.add(`nav-${c}`);
+  });
+
+  const navBrand = nav.querySelector('.nav-brand');
+  const brandLink = navBrand?.querySelector('.button');
+  if (brandLink) {
+    brandLink.className = '';
+    brandLink.closest('.button-container').className = '';
+  }
+
+  const navSections = nav.querySelector('.nav-sections');
+  if (navSections) {
+    navSections.querySelectorAll(':scope .default-content-wrapper > ul > li').forEach((navSection) => {
+      if (navSection.querySelector('ul')) navSection.classList.add('nav-drop');
+      navSection.addEventListener('click', () => {
+        if (isDesktop.matches) {
+          const expanded = navSection.getAttribute('aria-expanded') === 'true';
+          toggleAllNavSections(navSections);
+          navSection.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        }
+      });
+    });
+  }
+
+  const navTools = nav.querySelector('.nav-tools');
+  if (navTools) {
+    const contentWrapper = nav.querySelector('.nav-tools > div[class = "default-content-wrapper"]');
+    // Language switcher (minimal UI)
+    try {
+      const currentLang = getLanguage();
+      const langWrap = document.createElement('div');
+      langWrap.className = 'lang-switcher';
+      const langBtn = document.createElement('button');
+      langBtn.type = 'button';
+      langBtn.className = 'lang-button';
+      langBtn.setAttribute('aria-haspopup', 'listbox');
+      langBtn.setAttribute('aria-expanded', 'false');
+      langBtn.textContent = currentLang.toUpperCase();
+      const langMenu = document.createElement('ul');
+      langMenu.className = 'lang-menu';
+      langMenu.setAttribute('role', 'listbox');
+      const langs = await discoverLanguagesFromPlaceholders();
+      const uniqueLangs = [...new Set(langs && langs.length ? langs : ['en'])];
+      if (uniqueLangs.length <= 1) {
+        langBtn.setAttribute('disabled', 'true');
+        langWrap.classList.add('single-lang');
+      }
+      const regionNames = (() => {
+        try { return new Intl.DisplayNames([navigator.language || 'en'], { type: 'region' }); } catch (e) { return null; }
+      })();
+      const languageNames = (() => {
+        try { return new Intl.DisplayNames([navigator.language || 'en'], { type: 'language' }); } catch (e) { return null; }
+      })();
+
+      uniqueLangs.forEach((raw) => {
+        const code = String(raw).replace('_', '-').toLowerCase();
+        const [langPart, regionPart] = code.split('-');
+        const displayCode = `${langPart}${regionPart ? `-${regionPart}` : ''}`.toUpperCase();
+        const country = regionPart ? (regionNames ? regionNames.of(regionPart.toUpperCase()) : regionPart.toUpperCase())
+          : (languageNames ? languageNames.of(langPart) : langPart.toUpperCase());
+
+        const li = document.createElement('li');
+        li.className = 'lang-item';
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', langPart === currentLang ? 'true' : 'false');
+
+        const link = document.createElement('a');
+        // Use only language segment for routing if site paths are language-based
+        link.href = computeLocalizedUrl(langPart);
+
+        const pre = document.createElement('span');
+        pre.className = 'lang-pretitle';
+        pre.textContent = displayCode;
+
+        const name = document.createElement('span');
+        name.className = 'lang-country';
+        name.textContent = country;
+
+        link.append(name, pre);
+        li.append(link);
+        langMenu.append(li);
+      });
+      langBtn.addEventListener('click', () => {
+        const expanded = langBtn.getAttribute('aria-expanded') === 'true';
+        langBtn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        langWrap.classList.toggle('open', !expanded);
+      });
+      document.addEventListener('click', (e) => {
+        if (!langWrap.contains(e.target)) {
+          langBtn.setAttribute('aria-expanded', 'false');
+          langWrap.classList.remove('open');
+        }
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          langBtn.setAttribute('aria-expanded', 'false');
+          langWrap.classList.remove('open');
+        }
+      });
+      langWrap.append(langBtn, langMenu);
+      const targetContainer = contentWrapper || navTools;
+      targetContainer.append(langWrap);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('Language switcher init failed', e);
+    }
+    // Close Search Container on Focus out
+    document.addEventListener('click', (e) => {
+      closeSearchOnFocusOut(e, navTools);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        const headerWrapper = document.querySelector('.header-wrapper');
+        const searchContainer = headerWrapper ? headerWrapper.querySelector('.search-container') : null;
+        if (searchContainer && searchContainer.style.display !== 'none' && searchContainer.contains(e.target)) {
+          closeSearchBox();
+        }
+      }
+    });
+  }
+
+  // hamburger for mobile
+  const hamburger = document.createElement('div');
+  hamburger.classList.add('nav-hamburger');
+  hamburger.innerHTML = `<button type="button" aria-controls="nav" aria-label="Open navigation">
+      <span class="nav-hamburger-icon"></span>
+    </button>`;
+  hamburger.addEventListener('click', () => toggleMenu(nav, navSections));
+  nav.prepend(hamburger);
+  nav.setAttribute('aria-expanded', 'false');
+  // prevent mobile nav behavior on window resize
+  toggleMenu(nav, navSections, isDesktop.matches);
+  isDesktop.addEventListener('change', () => toggleMenu(nav, navSections, isDesktop.matches));
+
+  const navWrapper = document.createElement('div');
+  navWrapper.className = 'nav-wrapper';
+  navWrapper.append(nav);
+  block.append(navWrapper);
+  settingAltTextForSearchIcon();
+  //fetchingPlaceholdersData();
+  addLogoLink(langCode);
+  // Ensure search icon mask uses correct base path in UE/author/local
+  try {
+    const iconEl = document.querySelector('header .search.search-icon .icon');
+    if (iconEl && window.hlx && window.hlx.codeBasePath) {
+      const iconUrl = `${window.hlx.codeBasePath}/icons/search.svg`;
+      iconEl.style.webkitMask = `url(${iconUrl}) no-repeat center / contain`;
+      iconEl.style.mask = `url(${iconUrl}) no-repeat center / contain`;
+    }
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.debug('search icon mask init skipped', e);
+  }
+}
